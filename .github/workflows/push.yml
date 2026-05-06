@@ -12,21 +12,19 @@ jobs:
       - name: 获取商人信息
         id: check
         run: |
-          res=$(curl -s -w "%{http_code}" -o response.json "https://roco-api.vercel.app/api/merchant" \
-            -H "Authorization: Bearer sk-ba042e079cf9ccb30e72b3d5af458f45")
-          echo "status_code=$res" >> $GITHUB_OUTPUT
+          # 新的备用API接口
+          response=$(curl -s "https://roco-api.vercel.app/api/merchant")
+          echo "response=$response" >> $GITHUB_OUTPUT
 
-      - name: 推送 Bark 通知
+      - name: 发送Bark推送
         run: |
-          if [ "${{ steps.check.outputs.status_code }}" -eq 200 ]; then
-            goods=$(cat response.json | jq -r '
-              if .data.goods == null or .data.goods | length == 0 then
-                "本次刷新：无稀有商品"
-              else
-                .data.goods | map("- \(.name) x\(.count)") | join("\n")
-              end
-            ')
-          else
-            goods="API请求失败，状态码：${{ steps.check.outputs.status_code }}"
-          fi
+          goods=$(echo '${{ steps.check.outputs.response }}' | jq -r '
+            if .status == "success" and (.data.goods | length > 0) then
+              "本次刷新商品：\n" + (.data.goods | map("- \(.name) x\(.count)") | join("\n"))
+            elif .status == "success" then
+              "本次刷新：无稀有商品"
+            else
+              "API请求失败，接口返回错误"
+            end
+          ')
           curl -s "https://api.day.app/${{ secrets.BARK_KEY }}/商人已刷新/$goods"
