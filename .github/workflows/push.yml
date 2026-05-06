@@ -12,7 +12,7 @@ jobs:
       - name: 获取商人信息
         id: check
         run: |
-          res=$(curl -s -w "%{http_code}" -o response.json "https://wegame.shallow.ink/api/roco/merchant" \
+          res=$(curl -s -w "%{http_code}" -o response.json "https://roco-api.vercel.app/api/merchant" \
             -H "Authorization: Bearer sk-ba042e079cf9ccb30e72b3d5af458f45")
           echo "status_code=$res" >> $GITHUB_OUTPUT
 
@@ -21,7 +21,7 @@ jobs:
           if [ "${{ steps.check.outputs.status_code }}" -eq 200 ]; then
             goods=$(cat response.json | jq -r '
               if .data.goods == null or .data.goods | length == 0 then
-                "本次刷新：无商品"
+                "本次刷新：无稀有商品"
               else
                 .data.goods | map("- \(.name) x\(.count)") | join("\n")
               end
